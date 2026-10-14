@@ -1,2 +1,3 @@
 #!/bin/sh
-exec /usr/local/bin/s6-log T n10 s1048576 /config/logs/daemonless/mongodb
+# As bsd, or s6-log creates the log dir root-owned and the PUID check fails.
+exec /usr/local/bin/s6-setuidgid bsd /usr/local/bin/s6-log T n10 s1048576 /config/logs/daemonless/mongodb
