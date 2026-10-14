@@ -1,0 +1,37 @@
+#!/bin/sh
+# unifi-core — management plane (Node.js, Linux binary via linuxulator)
+# Depends on: postgres, uos-agent, ulp-go, uid-agent
+
+# Wait for PostgreSQL. unifi-node is a Linux ELF under linuxulator; keep
+# application connections on TCP instead of FreeBSD Unix socket paths.
+until /usr/local/bin/pg_isready -q -h 127.0.0.1 -p 5432; do
+    echo "[unifi-core] Waiting for PostgreSQL..."
+    sleep 2
+done
+
+# Wait for uos-agent HTTP port (fetch exits non-0 on 4xx; use nc to check port is open)
+until nc -z 127.0.0.1 11010 2>/dev/null; do
+    echo "[unifi-core] Waiting for uos-agent..."
+    sleep 2
+done
+
+mkdir -p /data/unifi-core/config/http /data/unifi-core/logs
+
+# cd to app dir: bundled service.js uses __dirname=/ in webpack, so ./webrtc.node
+# resolves relative to CWD; must be in app dir for the native addon to load.
+cd /usr/share/unifi-core/app
+
+# TODO: run as bsd once binary permissions are fixed (binaries are 0700 root in rootfs)
+exec env \
+    NODE_ENV=production \
+    NODE_CONFIG_DIR=/usr/share/unifi-core/app/config/:/data/unifi-core/config/overrides/ \
+    UV_THREADPOOL_SIZE=256 \
+    UV_USE_IO_URING=0 \
+    PGHOST=127.0.0.1 \
+    PGPORT=5432 \
+    /usr/local/bin/unifi-node \
+        --expose-gc \
+        --optimize-for-size \
+        --max-old-space-size=512 \
+        --unhandled-rejections=warn \
+        /usr/share/unifi-core/app/service.js

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/local/bin/s6-log T n10 s1048576 /config/logs/daemonless/mongodb

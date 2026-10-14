@@ -1,0 +1,12 @@
+#!/bin/sh
+# Ubiquiti system tool stub.
+# unifi-core calls: sudo -E -n ubnt-systool network-speed eth0
+
+case "$1" in
+    network-speed)
+        printf '{"speed":1000,"auto-nego":"on"}\n'
+        ;;
+    *)
+        exit 0
+        ;;
+esac

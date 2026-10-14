@@ -1,0 +1,6 @@
+#!/bin/sh
+# discovery-stub — HTTP stub on 127.0.0.1:11002
+# unifi-core calls GET /interfaces to get network interface data (IP, MAC, netmask).
+# Depends on: (none)
+
+exec /usr/local/bin/python3 /usr/share/discovery-stub/server.py

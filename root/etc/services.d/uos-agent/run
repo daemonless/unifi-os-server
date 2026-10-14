@@ -1,0 +1,15 @@
+#!/bin/sh
+# uos-agent — orchestration and alarm service
+# Depends on: dbus (for IPC), postgres is not a direct dep
+
+# Wait for D-Bus socket
+until [ -S /var/run/dbus/system_bus_socket ]; do
+    echo "[uos-agent] Waiting for D-Bus..."
+    sleep 1
+done
+
+mkdir -p /data/uos
+
+exec env \
+    DBUS_SYSTEM_BUS_ADDRESS="unix:path=/var/run/dbus/system_bus_socket" \
+    /usr/local/bin/uos-agent

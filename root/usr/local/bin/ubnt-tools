@@ -1,0 +1,29 @@
+#!/bin/sh
+# Ubiquiti board identification tool stub.
+# unifi-core calls this to get hardware identity (model, UUID, serial/MAC).
+
+UOS_UUID=$(cat /data/uos_uuid 2>/dev/null || echo "00000000-0000-0000-0000-000000000000")
+
+# Derive stable identifiers from UUID
+CPU_ID=$(echo "${UOS_UUID}" | tr -d '-')
+SERIALNO=$(echo "${UOS_UUID}" | tr -d '-' | cut -c1-12 | tr 'a-f' 'A-F')
+
+case $1 in
+    id)
+        echo "board.sysid=0xae01
+board.name=UniFi OS Server
+board.shortname=UOSSERVER
+board.uuid=${UOS_UUID}
+board.hwrev=0x0000
+board.serialno=${SERIALNO}
+board.mac=${SERIALNO}
+cpu.id=${CPU_ID}"
+        ;;
+    uuid)
+        echo "${UOS_UUID}"
+        ;;
+    *)
+        echo "UNSUPPORTED COMMAND: 'ubnt-tools $1'"
+        exit 2
+        ;;
+esac

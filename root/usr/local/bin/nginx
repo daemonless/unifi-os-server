@@ -1,0 +1,8 @@
+#!/bin/sh
+# Wrapper for unifi-core initiated reloads. The real nginx master is managed by s6.
+[ -x /usr/local/bin/uos-nginx-freebsd-fixups ] && /usr/local/bin/uos-nginx-freebsd-fixups
+if [ "$1" = "-s" ] && [ "$2" = "reload" ] && [ ! -s /var/run/nginx.pid ]; then
+    /usr/local/sbin/nginx -t >/dev/null 2>&1 || exit $?
+    exit 0
+fi
+exec /usr/local/sbin/nginx "$@"

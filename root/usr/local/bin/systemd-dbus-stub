@@ -1,0 +1,48 @@
+#!/bin/sh
+# systemd D-Bus stub for unifi-core in FreeBSD jails
+# Registers org.freedesktop.systemd1 on the session bus so unifi-core's
+# uos-agent.service watcher can connect without throwing unhandledRejection.
+# Uses @jellybrick/dbus-next which is already bundled with unifi-core.
+
+DBUS_ADDRESS="unix:path=/var/run/dbus/system_bus_socket"
+
+exec /usr/local/bin/unifi-node --unhandled-rejections=none - <<'EOF'
+const dbus = require('/usr/share/unifi-core/app/node_modules/@jellybrick/dbus-next');
+
+(async () => {
+  const bus = dbus.sessionBus({
+    busAddress: 'unix:path=/var/run/dbus/system_bus_socket'
+  });
+
+  await bus.requestName('org.freedesktop.systemd1');
+
+  // Export a stub Manager object at the standard path
+  const iface = {
+    name: 'org.freedesktop.systemd1.Manager',
+    methods: {
+      Subscribe: { inSignature: '', outSignature: '' },
+      Unsubscribe: { inSignature: '', outSignature: '' },
+      GetUnit: { inSignature: 's', outSignature: 'o' },
+      LoadUnit: { inSignature: 's', outSignature: 'o' },
+      ListUnits: { inSignature: '', outSignature: 'a(ssssssouso)' },
+    },
+    properties: {},
+    signals: {}
+  };
+
+  const obj = {
+    Subscribe: () => {},
+    Unsubscribe: () => {},
+    GetUnit: (name) => '/org/freedesktop/systemd1/unit/' + name.replace(/[^a-zA-Z0-9]/g, '_'),
+    LoadUnit: (name) => '/org/freedesktop/systemd1/unit/' + name.replace(/[^a-zA-Z0-9]/g, '_'),
+    ListUnits: () => [],
+  };
+
+  bus.export('/org/freedesktop/systemd1', iface, obj);
+
+  console.log('[systemd-stub] org.freedesktop.systemd1 registered on D-Bus session');
+})().catch(err => {
+  console.error('[systemd-stub] failed:', err.message);
+  process.exit(1);
+});
+EOF

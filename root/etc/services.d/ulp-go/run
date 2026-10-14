@@ -1,0 +1,30 @@
+#!/bin/sh
+# ulp-go — user lifecycle platform (identity/access management)
+# Depends on: postgres, unifi-core (v35 migration reads hostname from port 11081)
+
+# Wait for PostgreSQL (Unix socket)
+until /usr/local/bin/pg_isready -q -h /var/run/postgresql; do
+    echo "[ulp-go] Waiting for PostgreSQL..."
+    sleep 2
+done
+
+# Wait for unifi-core API (External HTTP API on 11011)
+until nc -z 127.0.0.1 11011 2>/dev/null; do
+    echo "[ulp-go] Waiting for unifi-core..."
+    sleep 2
+done
+
+mkdir -p /data/ulp-go/log /data/ulp-go/ws /data/ulp-go/tmp /srv/ulp-go
+# Linux ELF (linuxulator) sees /run as /compat/linux/run
+mkdir -p /compat/linux/run/ulp-go
+
+# TODO: run as bsd once binary permissions are fixed (binaries are 0700 root in rootfs)
+exec env \
+    ULP_DATA_DIR=/data/ulp-go \
+    ULP_LOG_DIR=/data/ulp-go/log \
+    ULP_WS_DIR=/data/ulp-go/ws \
+    ULP_TMP_DIR=/data/ulp-go/tmp \
+    ULP_HDD_DIR=/srv/ulp-go \
+    ULP_STATIC_DIR=/usr/lib/ulp-go \
+    ULP_RUN_DIR=/run/ulp-go \
+    /usr/local/bin/ulp-go-app --prop /usr/lib/ulp-go/config.props

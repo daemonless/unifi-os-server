@@ -1,0 +1,55 @@
+#!/bin/sh
+# uos shim — real UniFi OS uses this CLI to apt/dpkg-install controller
+# applications as Debian packages. Our images ship apps pre-extracted at
+# build time (no package system, no real up/downgrade capability), so this
+# shim always reports "current == latest" and lets install/uninstall
+# succeed as a no-op. unifi-core only cares that install exits 0 with a
+# progress/version format it can parse — see service.js's _i()/b4()/pR().
+
+version_for() {
+    # unifi-core packageName -> version bundled in this image. Derive from
+    # ace.jar's own webapp manifest (same source ace.jar itself reports as
+    # its version at startup) rather than hardcoding — survives rebuilds.
+    case "$1" in
+        unifi)
+            python3 -c 'import json; print(json.load(open("/usr/share/unifi/webapps/ROOT/app-unifi/manifest.json"))["version"].split(".0-")[0])' 2>/dev/null || echo "0.0.0"
+            ;;
+        *) echo "0.0.0" ;;
+    esac
+}
+
+cmd="$1"
+sub="$2"
+shift 2 2>/dev/null
+
+case "$cmd/$sub" in
+    runnable/current-version)
+        name="$1"
+        version_for "$name"
+        ;;
+    runnable/latest-versions)
+        # last positional arg is the package name
+        for name in "$@"; do :; done
+        v=$(version_for "$name")
+        printf '{"release":{"id":"local","version":"%s","url":""}}\n' "$v"
+        ;;
+    runnable/check-version)
+        name="$1"
+        v=$(version_for "$name")
+        printf '{"release":{"id":"local","version":"%s","url":""}}\n' "$v"
+        ;;
+    runnable/install)
+        # Already present on disk — report immediate completion.
+        echo 100
+        exit 0
+        ;;
+    runnable/uninstall)
+        exit 0
+        ;;
+    system/prune)
+        exit 0
+        ;;
+    *)
+        exit 0
+        ;;
+esac

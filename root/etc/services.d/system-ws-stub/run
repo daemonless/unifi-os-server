@@ -1,0 +1,7 @@
+#!/bin/sh
+# system-ws-stub — websocket backend for /api/ws/system on 127.0.0.1:19081.
+# uhd-setup opens this socket during setup; without it nginx 502s and the
+# setup wizard spins forever. Depends on: (none)
+
+exec /usr/local/bin/unifi-node --unhandled-rejections=none \
+    /usr/share/system-ws-stub/server.js

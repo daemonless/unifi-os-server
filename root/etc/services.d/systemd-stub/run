@@ -1,0 +1,12 @@
+#!/bin/sh
+# systemd D-Bus stub — registers org.freedesktop.systemd1 on the session bus
+# so unifi-core's uos-agent.service watcher can connect without crashing.
+# Depends on: dbus
+
+until [ -S /var/run/dbus/system_bus_socket ]; do
+    echo "[systemd-stub] Waiting for D-Bus..."
+    sleep 1
+done
+
+exec /usr/local/bin/unifi-node --unhandled-rejections=none \
+    /usr/share/systemd-dbus-stub/index.js

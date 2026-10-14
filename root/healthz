@@ -1,0 +1,3 @@
+#!/bin/sh
+# Health check: unifi-core HTTPS API must respond
+fetch -qo /dev/null --no-verify-peer https://127.0.0.1:443/api/2.0/login 2>/dev/null

@@ -1,0 +1,19 @@
+#!/bin/sh
+# mongodb — document database for unifi-network (ace.jar)
+# UniFi Network 9.x requires MongoDB 7.0 on port 27117.
+# Depends on: (none)
+
+mkdir -p /data/unifi/db /data/unifi/run /data/unifi/logs
+
+# Remove stale lock file if mongod was not cleanly shut down
+rm -f /data/unifi/db/mongod.lock 2>/dev/null
+
+# TODO: run as bsd once binary permissions are fixed
+exec /usr/local/bin/mongod \
+    --port 27117 \
+    --dbpath /data/unifi/db \
+    --unixSocketPrefix /data/unifi/run \
+    --logappend \
+    --logpath /data/unifi/logs/mongod.log \
+    --bind_ip 127.0.0.1 \
+    --wiredTigerCacheSizeGB 0.25

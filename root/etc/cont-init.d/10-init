@@ -1,0 +1,112 @@
+#!/bin/sh
+# One-time initialization: generate UUID, self-signed cert, create postgres roles
+
+set -e
+
+# Ensure runtime dirs exist
+mkdir -p /var/run/dbus
+
+# Host/proc metadata required by ulp-go, uid-agent, and Linux Node.
+# In a FreeBSD jail linprocfs usually cannot be mounted from inside the
+# container, so provide small static files for the fields these services read.
+if [ ! -f /etc/hostname ]; then
+    hostname > /etc/hostname
+fi
+mkdir -p /proc/sys/kernel /compat/linux/etc /compat/linux/proc/self /compat/linux/proc/sys/kernel
+hostname > /proc/sys/kernel/hostname
+hostname > /compat/linux/etc/hostname
+hostname > /compat/linux/proc/sys/kernel/hostname
+if [ ! -f /proc/stat ]; then
+    printf 'cpu  1 0 1 1 0 0 0 0 0 0\ncpu0 1 0 1 1 0 0 0 0 0 0\n' > /proc/stat
+fi
+if ! grep -q '^btime ' /proc/stat 2>/dev/null; then
+    printf 'btime %s\n' "$(date +%s)" >> /proc/stat
+fi
+cp /proc/stat /compat/linux/proc/stat 2>/dev/null || true
+if [ ! -f /compat/linux/proc/self/statm ]; then
+    printf '65536 16384 4096 1024 0 8192 0\n' > /compat/linux/proc/self/statm
+fi
+if [ ! -f /compat/linux/proc/self/stat ]; then
+    printf '1 (node) S 0 0 0 0 0 0 0 0 0 0 0 0 0 0 20 0 1 0 0 268435456 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0\n' > /compat/linux/proc/self/stat
+fi
+
+DATA=/config
+mkdir -p "${DATA}"
+
+# Generate persistent device UUID. UniFi Network validates UniFi OS Server
+# hardware UUIDs and requires a version 5 UUID.
+python3 - <<'PY'
+from pathlib import Path
+import uuid
+
+p = Path("/data/uos_uuid")
+old = p.read_text().strip() if p.exists() else ""
+
+try:
+    current = uuid.UUID(old)
+    if current.version == 5:
+        raise SystemExit
+except ValueError:
+    pass
+
+seed = old
+if not seed:
+    try:
+        seed = Path("/proc/sys/kernel/hostname").read_text().strip()
+    except OSError:
+        seed = "unifi-os-server"
+
+new = uuid.uuid5(uuid.NAMESPACE_DNS, "daemonless-unifi-os-server:" + seed)
+p.write_text(f"{new}\n")
+print(f"[init] Generated device UUID: {new}")
+PY
+
+# Generate self-signed TLS cert for unifi-core if not present
+if [ ! -f /data/unifi-core/config/unifi-core.crt ]; then
+    echo "[init] Generating self-signed TLS certificate..."
+    mkdir -p /data/unifi-core/config
+    openssl req -x509 -newkey rsa:2048 -days 3650 -nodes -sha256 \
+        -keyout /data/unifi-core/config/unifi-core.key \
+        -out /data/unifi-core/config/unifi-core.crt \
+        -subj "/CN=unifi-os-server/O=UniFi" \
+        2>/dev/null
+    # Direct cert (same for now)
+    cp /data/unifi-core/config/unifi-core.crt /data/unifi-core/config/unifi-core-direct.crt
+    cp /data/unifi-core/config/unifi-core.key /data/unifi-core/config/unifi-core-direct.key
+    chown -R bsd:bsd /data/unifi-core
+fi
+
+# Generate timezone list for unifi-core
+if [ ! -f /data/unifi-core/timezones.txt ]; then
+    find /usr/share/zoneinfo -type f | sed 's|/usr/share/zoneinfo/||' | grep '/' | sort \
+        > /data/unifi-core/timezones.txt
+fi
+
+echo "[init] Initialization complete"
+
+# machine-id: required by uos-agent (Linux ELF via linuxulator)
+# Must be 32-char hex (no dashes)
+mkdir -p /compat/linux/var/lib/dbus
+if [ ! -f /compat/linux/etc/machine-id ]; then
+    MACHINE_ID=$(cat /data/uos_uuid 2>/dev/null | tr -d '-')
+    echo "${MACHINE_ID}" > /compat/linux/etc/machine-id
+    echo "${MACHINE_ID}" > /compat/linux/var/lib/dbus/machine-id
+    echo "[init] Generated machine-id: ${MACHINE_ID}"
+fi
+
+# unifi-core and unifi binaries are extracted 0700 root — make readable
+chmod -R o+rX /usr/share/unifi-core 2>/dev/null || true
+chmod -R o+rX /usr/share/unifi 2>/dev/null || true
+chmod -R o+rX /usr/share/unifi-assets 2>/dev/null || true
+# ulp-go (users app) and uid-agent ship static UI bundles (SWAI) that nginx
+# (running as bsd) must read directly; also extracted 0700 root
+chmod -R o+rX /usr/lib/ulp-go 2>/dev/null || true
+chmod -R o+rX /usr/lib/uid-agent 2>/dev/null || true
+
+# Real UOS containers write this from the entrypoint (uos-entrypoint.sh);
+# unifi-core reads it for the firmware-platform identifier used in update
+# checks. "linux-x64" matches the platform key our own upstream-url query
+# uses for this same product/build.
+if [ ! -f /usr/lib/platform ]; then
+    echo "linux-x64" > /usr/lib/platform
+fi

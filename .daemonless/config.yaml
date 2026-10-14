@@ -1,0 +1,20 @@
+# dbuild configuration file
+# Place in .daemonless/config.yaml or .dbuild.yaml (higher priority)
+#
+# Full reference: https://github.com/daemonless/dbuild
+
+build:
+  variants:
+    - tag: latest
+      containerfile: Containerfile
+      default: true
+
+cit:
+  mode: port
+  port: 443
+  https: true
+  wait: 300
+  annotations:
+    - org.freebsd.jail.allow.mlock=true
+    - org.freebsd.jail.allow.sysvipc=true
+

@@ -1,0 +1,12 @@
+#!/bin/sh
+# D-Bus session daemon — required by uos-agent for IPC
+# Runs in session mode at the system bus socket path.
+# System mode requires CAP_SETPCAP (not available in jails), so we use session mode.
+# Socket under /tmp to avoid /run tmpfs issues with linuxulator.
+
+mkdir -p /var/run/dbus
+
+exec /usr/local/bin/dbus-daemon \
+    --session \
+    --nofork \
+    --address="unix:path=/var/run/dbus/system_bus_socket"

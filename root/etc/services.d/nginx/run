@@ -1,0 +1,30 @@
+#!/bin/sh
+# nginx — frontend reverse proxy, config managed by unifi-core
+# Depends on: unifi-core (generates nginx site configs and TLS certs)
+
+# Wait for unifi-core TLS cert (generated during its startup)
+until [ -f /data/unifi-core/config/unifi-core.crt ]; do
+    echo "[nginx] Waiting for unifi-core TLS cert..."
+    sleep 2
+done
+
+# Wait for unifi-core to write its nginx configs
+until [ -f /data/unifi-core/config/http/upstream-uos.conf ]; do
+    echo "[nginx] Waiting for unifi-core nginx config..."
+    sleep 2
+done
+
+# Unlink stale nginx-owned listen sockets left by an unclean shutdown; bind()
+# on an existing socket file fails with EADDRINUSE even with no listener.
+# s6 guarantees no nginx master is alive when this script runs.
+grep -rhoE 'listen +unix:[^; ]+' /usr/share/unifi-core/http /data/unifi-core/config/http 2>/dev/null \
+    | sed 's/listen *unix://' | sort -u | while read -r sock; do
+    [ -S "$sock" ] && rm -f "$sock"
+done
+
+# fixups also regenerates nginx.conf for the current console state
+/usr/local/bin/uos-nginx-freebsd-fixups
+
+nginx -t 2>&1 && echo "[nginx] Config OK"
+
+exec /usr/local/sbin/nginx -g "daemon off;"

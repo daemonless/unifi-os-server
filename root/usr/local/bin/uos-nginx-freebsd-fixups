@@ -1,0 +1,62 @@
+#!/bin/sh
+# unifi-core's main HTTP+WebSocket server listens ONLY on the Linux unix sockets
+# uos-http.sock / uos-auth.sock (the TCP port 11081 is the IPC server — it answers
+# HTTP but NOT /api/ws/system). Native FreeBSD nginx CAN reach these sockets since
+# the /data volume is a shared filesystem, but unifi-core creates the socket dir
+# 0700 root:bsd, so the bsd nginx workers get EACCES and fall back to a 502/wrong
+# server. Make the dir group-traversable so nginx can connect. Do NOT rewrite the
+# upstreams to TCP — that routes WebSockets to the IPC server and the wizard hangs.
+
+# Regenerate nginx.conf for the current console state (pre/post-setup sites)
+[ -x /usr/local/bin/uos-nginx-genconf ] && /usr/local/bin/uos-nginx-genconf
+
+# Let the bsd nginx workers traverse into the socket dir (created 0700 root:bsd)
+http_dir=/data/unifi-core/config/http
+[ -d "$http_dir" ] && chmod 0750 "$http_dir"
+
+for setup_conf in /usr/share/unifi-core/http/site-setup.uosserver.conf /data/unifi-core/config/http/site-setup.uosserver.conf; do
+    [ -f "$setup_conf" ] || continue
+    python3 - "$setup_conf" <<'PYFIX'
+from pathlib import Path
+import sys
+
+p = Path(sys.argv[1])
+s = p.read_text()
+s = s.replace('if ($arg_skip_intro = "") {', 'if ($args = "") {')
+api_needle = """    # UniFi OS public API
+    location /api/ {
+"""
+if api_needle not in s:
+    raise SystemExit(f"setup API insertion point not found in {p}")
+
+if "FreeBSD setup intro route compatibility" not in s:
+    intro = """    # FreeBSD setup intro route compatibility
+    location = / {
+        include /usr/share/unifi-core/http/security.conf;
+        root /usr/share/unifi-core/app/node_modules/@ubnt/uhd-setup/dist;
+        try_files /index.html =404;
+        expires -1;
+        add_header Cache-Control "no-store" always;
+    }
+
+"""
+    s = s.replace(api_needle, intro + api_needle, 1)
+
+if "FreeBSD setup compatibility API stubs" not in s:
+    stubs = """    # FreeBSD setup compatibility API stubs
+    location = /api/backup/setup/has-legacy-net {
+        default_type application/json;
+        return 200 '{"hasLegacyNet":false}';
+    }
+
+    location = /api/system/previous-subnet {
+        default_type application/json;
+        return 200 '{"previousSubnet":null}';
+    }
+
+"""
+    s = s.replace(api_needle, stubs + api_needle, 1)
+
+p.write_text(s)
+PYFIX
+done

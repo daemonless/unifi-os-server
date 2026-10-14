@@ -1,0 +1,78 @@
+#!/bin/sh
+# unifi-network — UniFi Network application (ace.jar), runs on FreeBSD JVM
+# Depends on: unifi-core (gRPC port 11051)
+
+# Wait for MongoDB (UniFi Network's primary database)
+until nc -z 127.0.0.1 27117 2>/dev/null; do
+    echo "[unifi-network] Waiting for MongoDB..."
+    sleep 2
+done
+
+# Wait for unifi-core gRPC port
+until nc -z 127.0.0.1 11051 2>/dev/null; do
+    echo "[unifi-network] Waiting for unifi-core..."
+    sleep 3
+done
+
+# Persistent data directories (on /data volume)
+mkdir -p /data/unifi/logs /data/unifi/run
+
+# ace.jar symlinks: /usr/share/unifi/{data,logs,run} -> /var/{lib,log,run}/unifi
+# Redirect those to /data/unifi for persistent storage
+mkdir -p /var/lib /var/log /var/run
+chmod 755 /var/lib /var/log  # bsd user must be able to traverse these dirs
+if [ ! -d /var/lib/unifi ]; then
+    ln -sf /data/unifi /var/lib/unifi
+fi
+if [ ! -d /var/log/unifi ]; then
+    ln -sf /data/unifi/logs /var/log/unifi
+fi
+if [ ! -d /var/run/unifi ]; then
+    ln -sf /data/unifi/run /var/run/unifi
+fi
+
+# ace.jar reads system.properties from its data dir (/var/lib/unifi = /data/unifi)
+if [ ! -f /data/unifi/system.properties ]; then
+    printf '# UniFi Network system properties\nis_default=true\n' \
+        > /data/unifi/system.properties
+fi
+if ! grep -q '^db.mongo.local=' /data/unifi/system.properties; then
+    cat >> /data/unifi/system.properties <<'EOF'
+db.mongo.local=false
+db.mongo.uri=mongodb://127.0.0.1:27117/unifi
+statdb.mongo.uri=mongodb://127.0.0.1:27117/unifi_stat
+EOF
+fi
+
+# MongoDB data directory
+mkdir -p /data/unifi/db
+chown -R bsd:bsd /data/unifi
+
+# Run from the BASE dir (/usr/share/unifi) so relative paths in ace.jar work
+cd /usr/share/unifi
+
+# Grafted standalone Network (uos-network-graft.py): thin launcher plus the
+# UOS-only jars in lib/extra. set -f keeps the shell from expanding the
+# classpath wildcard; java expands it.
+if [ -d /usr/share/unifi/lib/extra ]; then
+    LAUNCH='-cp /usr/share/unifi/lib/ace.jar:/usr/share/unifi/lib/extra/* com.ubnt.ace.Launcher'
+else
+    LAUNCH='-jar /usr/share/unifi/lib/ace.jar'
+fi
+set -f
+
+# TODO: run as bsd once binary permissions are fixed (binaries are 0700 root in rootfs)
+exec env \
+    UNIFI_DATADIR=/data/unifi \
+    /usr/local/bin/s6-setuidgid bsd \
+    /usr/local/bin/java \
+        -Xmx1024m \
+        -XX:+UseParallelGC \
+        --add-opens=java.base/java.time=ALL-UNNAMED \
+        -Dspring.profiles.active=unifi-os \
+        -Dunifi-os.server=true \
+        -Dunifi.core.enabled=true \
+        -Dunifi.mongodb.service.enabled=true \
+        -Dunifi.datadir=/data/unifi \
+        $LAUNCH \
+        start

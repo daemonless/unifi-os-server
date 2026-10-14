@@ -1,0 +1,18 @@
+#!/bin/sh
+# uid-agent — user identity and directory service
+# Depends on: postgres
+
+# Wait for PostgreSQL (Unix socket)
+until /usr/local/bin/pg_isready -q -h /var/run/postgresql; do
+    echo "[uid-agent] Waiting for PostgreSQL..."
+    sleep 2
+done
+
+mkdir -p /data/uid/log /data/uid/ws
+# Linux ELF sees /run as /compat/linux/run (linuxulator path translation)
+mkdir -p /compat/linux/run/uid /srv/uid /data/unifi-access
+
+# TODO: run as bsd once binary permissions are fixed (binaries are 0700 root in rootfs)
+exec env \
+    UNIFI_GOAPP_BUILD_JSON=/usr/lib/uid-agent/build.json \
+    /usr/local/bin/uid-agent-app --props /usr/lib/uid-agent/config.props

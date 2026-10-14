@@ -1,0 +1,75 @@
+#!/bin/sh
+# systemctl shim — unifi-core manages services (systemctl enable --now unifi,
+# disable --now, restart, kill, is-active, is-system-running) on UniFi OS.
+# Map known units to s6 service dirs; unknown units succeed as no-ops so
+# unifi-core's "uncontrolled services" management doesn't error out.
+
+SVCDIR=/run/s6/services
+
+map_unit() {
+    case "${1%.service}" in
+        unifi) echo "unifi-network" ;;
+        ulp-go) echo "ulp-go" ;;
+        uid-agent) echo "uid-agent" ;;
+        nginx) echo "nginx" ;;
+        postgres|postgresql*) echo "postgres" ;;
+        mongod|mongodb) echo "mongodb" ;;
+        *) echo "" ;;
+    esac
+}
+
+cmd="$1"
+[ $# -gt 0 ] && shift
+
+case "$cmd" in
+    is-system-running)
+        echo "running"
+        exit 0
+        ;;
+    start|stop|restart|enable|disable|kill|mask|unmask|is-active|is-enabled)
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+# Last non-flag argument is the unit name (skips --now, --wait, ...)
+unit=""
+for a in "$@"; do
+    case "$a" in
+        --*) ;;
+        *) unit="$a" ;;
+    esac
+done
+
+svc=$(map_unit "$unit")
+[ -z "$svc" ] && exit 0
+dir="$SVCDIR/$svc"
+[ -d "$dir" ] || exit 0
+
+case "$cmd" in
+    start|enable)
+        exec s6-svc -u "$dir"
+        ;;
+    stop|disable|kill)
+        exec s6-svc -d "$dir"
+        ;;
+    restart)
+        exec s6-svc -r "$dir"
+        ;;
+    is-active)
+        if s6-svstat "$dir" 2>/dev/null | grep -q '^up'; then
+            echo active
+            exit 0
+        fi
+        echo inactive
+        exit 3
+        ;;
+    is-enabled)
+        echo enabled
+        exit 0
+        ;;
+    mask|unmask)
+        exit 0
+        ;;
+esac
