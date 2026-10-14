@@ -18,3 +18,6 @@ cit:
     - org.freebsd.jail.allow.mlock=true
     - org.freebsd.jail.allow.sysvipc=true
 
+# Highly experimental: keep it out of the fjord catalog for now.
+fjord:
+  exclude: true
