@@ -1,0 +1,10 @@
+name = "postgres";
+provides = ["postgres"];
+type = "simple";
+enable = true;
+command = "/daemonless/libexec/postgres";
+# Fast shutdown: smart (TERM) waits for the apps' connections, and rcd stops
+# units one at a time.
+sig_stop = "INT";
+process { env_file = "/run/rcd.env"; }
+restart { policy = "always"; max_retries = 0; delay = 5000; backoff = "none"; }

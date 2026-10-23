@@ -64,7 +64,7 @@ set -f
 # TODO: run as bsd once binary permissions are fixed (binaries are 0700 root in rootfs)
 exec env \
     UNIFI_DATADIR=/data/unifi \
-    /usr/local/bin/s6-setuidgid bsd \
+    dsu bsd \
     /usr/local/bin/java \
         -Xmx1024m \
         -XX:+UseParallelGC \

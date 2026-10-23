@@ -16,7 +16,7 @@ done
 
 # Unlink stale nginx-owned listen sockets left by an unclean shutdown; bind()
 # on an existing socket file fails with EADDRINUSE even with no listener.
-# s6 guarantees no nginx master is alive when this script runs.
+# rcd guarantees no nginx master is alive when this script runs.
 grep -rhoE 'listen +unix:[^; ]+' /usr/share/unifi-core/http /data/unifi-core/config/http 2>/dev/null \
     | sed 's/listen *unix://' | sort -u | while read -r sock; do
     [ -S "$sock" ] && rm -f "$sock"

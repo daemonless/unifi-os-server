@@ -19,7 +19,7 @@ if [ ! -f "${PGDATA}/PG_VERSION" ]; then
         chmod 0700 "${PGDATA}"
     fi
     echo "[postgres] Initializing database cluster..."
-    /usr/local/bin/s6-setuidgid bsd \
+    dsu bsd \
         /usr/local/bin/initdb -D "${PGDATA}" -E UTF8 --locale=C || exit 1
 
     # Allow all local connections without password (Unix socket + TCP loopback)
@@ -31,33 +31,33 @@ if [ ! -f "${PGDATA}/PG_VERSION" ]; then
     # don't see it via pg_isready and try to connect before roles are created
     mkdir -p /tmp/pg-init
     chown bsd:bsd /tmp/pg-init
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/pg_ctl -D "${PGDATA}" -w start \
+    dsu bsd /usr/local/bin/pg_ctl -D "${PGDATA}" -w start \
         -o "-c listen_addresses='' -c unix_socket_directories=/tmp/pg-init"
 
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
+    dsu bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
         "CREATE USER \"unifi-core\" WITH CREATEDB;" 2>/dev/null || true
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
+    dsu bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
         "CREATE DATABASE \"unifi-core\" OWNER \"unifi-core\";" 2>/dev/null || true
 
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
+    dsu bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
         "CREATE USER \"ulp-go\" WITH CREATEDB;" 2>/dev/null || true
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
+    dsu bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
         "CREATE DATABASE \"ulp-go\" OWNER \"ulp-go\";" 2>/dev/null || true
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
+    dsu bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
         "CREATE DATABASE \"ulp-go-syslog\" OWNER \"ulp-go\";" 2>/dev/null || true
 
     # uid-agent config.props uses role "uid" and database "uid"
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
+    dsu bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
         "CREATE USER \"uid\" WITH CREATEDB;" 2>/dev/null || true
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
+    dsu bsd /usr/local/bin/psql -h /tmp/pg-init -d postgres -c \
         "CREATE DATABASE \"uid\" OWNER \"uid\";" 2>/dev/null || true
 
-    /usr/local/bin/s6-setuidgid bsd /usr/local/bin/pg_ctl -D "${PGDATA}" -w stop
+    dsu bsd /usr/local/bin/pg_ctl -D "${PGDATA}" -w stop
     echo "[postgres] Database initialized"
 fi
 
 echo "[postgres] Starting PostgreSQL..."
-exec /usr/local/bin/s6-setuidgid bsd /usr/local/bin/postgres \
+exec dsu bsd /usr/local/bin/postgres \
     -D "${PGDATA}" \
     -c listen_addresses="127.0.0.1" \
     -c unix_socket_directories="/var/run/postgresql"

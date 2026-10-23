@@ -5,7 +5,7 @@
 # --------------------------------------------------------------------------
 
 ARG BASE_VERSION=15
-FROM ghcr.io/daemonless/base:${BASE_VERSION}
+FROM ghcr.io/daemonless/base-rcd:${BASE_VERSION}
 
 ARG FREEBSD_ARCH=amd64
 ARG UPSTREAM_URL="https://fw-update.ui.com/api/firmware-latest?filter=eq~~product~~unifi-os-server&filter=eq~~channel~~release"
@@ -165,20 +165,9 @@ RUN mv /usr/local/sbin/nginx /usr/local/sbin/nginx.real
 
 # Copy s6 service scripts, ubnt-tools, nginx config, and health endpoint
 COPY root/ /
+RUN chmod +x /daemonless/libexec/* /daemonless/init.d/*
 
-RUN chmod +x \
-        /etc/services.d/*/run \
-        /etc/services.d/*/log/run \
-        /etc/cont-init.d/* \
-        /usr/local/bin/ubnt-tools \
-        /usr/local/bin/ubnt-systool \
-        /usr/local/bin/nginx \
-        /usr/local/bin/uos-nginx-freebsd-fixups \
-        /usr/local/bin/uos-nginx-genconf \
-        /usr/local/bin/systemctl \
-        /usr/local/bin/uos \
-        /usr/local/sbin/nginx \
-        /healthz 2>/dev/null || true
+RUN chmod +x /usr/local/bin/ubnt-tools /usr/local/bin/ubnt-systool /usr/local/bin/nginx /usr/local/bin/uos-nginx-freebsd-fixups /usr/local/bin/uos-nginx-genconf /usr/local/bin/systemctl /usr/local/bin/uos /usr/local/sbin/nginx /healthz
 
 # Linux compat copies — Linux ELF binaries exec these via linuxulator.
 # unifi-core (Linux ELF) resolves bare command names against its own PATH,

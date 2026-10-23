@@ -1,0 +1,7 @@
+name = "ulp-go";
+provides = ["ulp-go"];
+type = "simple";
+enable = true;
+command = "/daemonless/libexec/ulp-go";
+process { env_file = "/run/rcd.env"; }
+restart { policy = "always"; max_retries = 0; delay = 5000; backoff = "none"; }
