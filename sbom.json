@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-14T23:15:03Z",
+  "generated": "2026-10-23T16:59:55Z",
   "image": "unifi-os-server",
   "tags": {
     "latest": {
       "app_version": "5.1.42",
       "arch": "amd64",
-      "generated": "2026-10-14T23:10:37Z",
+      "generated": "2026-10-23T16:56:09Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -181,13 +181,6 @@
             "licenses": [
               "BSD2CLAUSE"
             ],
-            "name": "FreeBSD-rc",
-            "version": "15.1"
-          },
-          {
-            "licenses": [
-              "BSD2CLAUSE"
-            ],
             "name": "FreeBSD-resolvconf",
             "version": "15.1"
           },
@@ -196,7 +189,7 @@
               "BSD2CLAUSE"
             ],
             "name": "FreeBSD-runtime",
-            "version": "15.1p4"
+            "version": "15.1p5"
           },
           {
             "licenses": [
@@ -245,7 +238,7 @@
               "PD"
             ],
             "name": "FreeBSD-zoneinfo",
-            "version": "15.1p4"
+            "version": "15.1p5"
           },
           {
             "licenses": [
@@ -273,7 +266,7 @@
               "MPL20"
             ],
             "name": "ca_root_nss",
-            "version": "3.130"
+            "version": "3.131"
           },
           {
             "licenses": [
@@ -288,13 +281,6 @@
             ],
             "name": "cyrus-sasl",
             "version": "2.1.28_6"
-          },
-          {
-            "licenses": [
-              "ISCL"
-            ],
-            "name": "execline",
-            "version": "2.9.8.1"
           },
           {
             "licenses": [
@@ -548,7 +534,7 @@
               "BSD2CLAUSE"
             ],
             "name": "nginx",
-            "version": "1.30.5_2,3"
+            "version": "1.30.6,3"
           },
           {
             "licenses": [
@@ -624,7 +610,7 @@
               "PSFL"
             ],
             "name": "python312",
-            "version": "3.12.14_1"
+            "version": "3.12.15"
           },
           {
             "licenses": [
@@ -632,20 +618,6 @@
             ],
             "name": "readline",
             "version": "8.3.6"
-          },
-          {
-            "licenses": [
-              "ISCL"
-            ],
-            "name": "s6",
-            "version": "2.14.0.1"
-          },
-          {
-            "licenses": [
-              "ISCL"
-            ],
-            "name": "skalibs",
-            "version": "2.14.5.1"
           },
           {
             "licenses": [
@@ -4879,7 +4851,7 @@
       "source": "upstream",
       "summary": {
         "dotnet": 0,
-        "freebsd": 94,
+        "freebsd": 90,
         "go": 214,
         "java": 181,
         "node": 439,
@@ -4887,7 +4859,7 @@
         "python": 2,
         "ruby": 0,
         "rust": 0,
-        "total": 930
+        "total": 926
       }
     }
   }
