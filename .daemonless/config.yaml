@@ -8,6 +8,10 @@ build:
     - tag: latest
       containerfile: Containerfile
       default: true
+      # mongodb70 failed in the 15.1 quarterly package run (2026-10-22) and
+      # dropped out of that repo; the latest repo has it.
+      args:
+        BASE_VERSION: "15.1-latest"
 
 cit:
   mode: port
