@@ -1,11 +1,11 @@
 {
-  "generated": "2026-10-24T09:31:09Z",
+  "generated": "2026-11-04T15:12:19Z",
   "image": "unifi-os-server",
   "tags": {
     "latest": {
       "app_version": "5.1.42",
       "arch": "amd64",
-      "generated": "2026-10-24T09:26:30Z",
+      "generated": "2026-11-04T15:08:31Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -189,7 +189,7 @@
               "BSD2CLAUSE"
             ],
             "name": "FreeBSD-runtime",
-            "version": "15.1p5"
+            "version": "15.1p6"
           },
           {
             "licenses": [
@@ -259,14 +259,14 @@
               "MIT"
             ],
             "name": "brotli",
-            "version": "1.2.0,1"
+            "version": "1.2.1,1"
           },
           {
             "licenses": [
               "MPL20"
             ],
             "name": "ca_root_nss",
-            "version": "3.131"
+            "version": "3.132"
           },
           {
             "licenses": [
@@ -340,7 +340,7 @@
               "MIT"
             ],
             "name": "harfbuzz",
-            "version": "14.6.0"
+            "version": "15.0.0"
           },
           {
             "licenses": [
@@ -534,7 +534,7 @@
               "BSD2CLAUSE"
             ],
             "name": "nginx",
-            "version": "1.30.6_4,3"
+            "version": "1.30.6_10,3"
           },
           {
             "licenses": [
@@ -548,7 +548,7 @@
               "GPLv2"
             ],
             "name": "openjdk25-headless",
-            "version": "25.0.4+7.f.1_1"
+            "version": "25.0.5.0.3+1.f.1_1"
           },
           {
             "licenses": [
