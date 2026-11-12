@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-04T15:12:19Z",
+  "generated": "2026-11-12T23:10:16Z",
   "image": "unifi-os-server",
   "tags": {
     "latest": {
       "app_version": "5.1.42",
       "arch": "amd64",
-      "generated": "2026-11-04T15:08:31Z",
+      "generated": "2026-11-12T23:04:55Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -287,7 +287,7 @@
               "MIT"
             ],
             "name": "expat",
-            "version": "2.9.0"
+            "version": "2.10.0"
           },
           {
             "licenses": [
@@ -505,7 +505,7 @@
               "REGEX"
             ],
             "name": "llvm19",
-            "version": "19.1.7_4"
+            "version": "19.1.7_5"
           },
           {
             "licenses": [
@@ -534,7 +534,7 @@
               "BSD2CLAUSE"
             ],
             "name": "nginx",
-            "version": "1.30.6_10,3"
+            "version": "1.30.6_13,3"
           },
           {
             "licenses": [
@@ -570,7 +570,7 @@
               "BSD2CLAUSE"
             ],
             "name": "pkg",
-            "version": "2.8.4"
+            "version": "2.9.0"
           },
           {
             "licenses": [
